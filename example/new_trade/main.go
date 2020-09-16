@@ -4,7 +4,8 @@ import (
 	"flag"
 	"log"
 	"time"
-	valr_ws "valr_go"
+
+	"github.com/Rellum/valr_ws"
 )
 
 var keyID = flag.String("k", "", "Valr API Key ID")
