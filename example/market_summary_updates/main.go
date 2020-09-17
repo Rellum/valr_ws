@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"time"
@@ -13,17 +14,15 @@ var keySecret = flag.String("s", "", "Valr API Key secret")
 
 func main() {
 	flag.Parse()
-	c := valr_ws.New(*keyID, *keySecret)
 
-	err := c.Connect()
+	fn := func(update valr_ws.MarketSummaryUpdate) {
+		log.Printf("%+v", update)
+	}
+
+	err := valr_ws.NewMarketSummaryUpdatesStream(context.Background(), *keyID, *keySecret, []string{"BTCZAR"}, fn)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	c.OnMarketSummaryUpdates([]string{"BTCZAR"}, func(update valr_ws.MarketSummaryUpdate) {
-		log.Printf("%+v", update)
-	})
-
 	time.Sleep(30 * time.Second)
-	c.Close()
 }
