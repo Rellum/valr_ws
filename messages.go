@@ -100,7 +100,7 @@ type newTradeResponse struct {
 }
 
 type NewTrade struct {
-	Pair     string          `json:"currencyPairSymbol"`
+	Pair     string          `json:"currencyPair"`
 	TradedAt time.Time       `json:"tradedAt"`
 	Side     Side            `json:"takerSide"`
 	Price    decimal.Decimal `json:"price"`
@@ -114,7 +114,7 @@ type newTradeBucketResponse struct {
 }
 
 type NewTradeBucket struct {
-	Pair   string          `json:"currencyPairSymbol"`
+	Pair   string          `json:"currencyPair"`
 	Period int             `json:"bucketPeriodInSeconds"`
 	Start  time.Time       `json:"startTime"`
 	Open   decimal.Decimal `json:"open"`

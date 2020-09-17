@@ -183,8 +183,6 @@ func (c *client) connect(ctx context.Context, fn func(responseType, []byte)) err
 				return
 			}
 
-			log.Printf("recv: %s", bl)
-
 			var res response
 			err = json.Unmarshal(bl, &res)
 			if err != nil {
