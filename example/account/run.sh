@@ -1,0 +1,2 @@
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+go run $DIR -k=7a6c07ca37f0a46a9a8ace945b578c43fa822f145f3d5b14e4b527dc3feccd03 -s=c665daef06c85cc705f0a927c8fb684be37c624939aee9d17f9d89d3794f05f6

@@ -26,7 +26,7 @@ func NewMarketSummaryUpdatesStream(ctx context.Context, apiKey, apiSecret string
 		apiSecret: apiSecret,
 	}
 
-	err := c.connect(ctx, func(r responseType, bl []byte) {
+	err := c.connect(ctx, "/ws/trade", func(r responseType, bl []byte) {
 		if r != responseTypeMarketSummaryUpdate {
 			return
 		}
@@ -61,7 +61,7 @@ func NewAggregatedOrderbookUpdatesStream(ctx context.Context, apiKey, apiSecret 
 		apiSecret: apiSecret,
 	}
 
-	err := c.connect(ctx, func(r responseType, bl []byte) {
+	err := c.connect(ctx, "/ws/trade", func(r responseType, bl []byte) {
 		if r != responseTypeAggregatedOrderbookUpdate {
 			return
 		}
@@ -96,7 +96,7 @@ func NewTradeBucketStream(ctx context.Context, apiKey, apiSecret string, pairs [
 		apiSecret: apiSecret,
 	}
 
-	err := c.connect(ctx, func(r responseType, bl []byte) {
+	err := c.connect(ctx, "/ws/trade", func(r responseType, bl []byte) {
 		if r != responseTypeNewTradeBucket {
 			return
 		}
@@ -131,7 +131,7 @@ func NewTradeStream(ctx context.Context, apiKey, apiSecret string, pairs []strin
 		apiSecret: apiSecret,
 	}
 
-	err := c.connect(ctx, func(r responseType, bl []byte) {
+	err := c.connect(ctx, "/ws/trade", func(r responseType, bl []byte) {
 		if r != responseTypeNewTrade {
 			return
 		}
@@ -150,6 +150,25 @@ func NewTradeStream(ctx context.Context, apiKey, apiSecret string, pairs []strin
 	}
 
 	err = subscribe(c.conn, eventTypeNewTrade, pairs)
+	if err != nil {
+		return err
+	}
+
+	return pingForever(ctx, c.conn, c.done)
+}
+
+func NewAccountStream(ctx context.Context, apiKey, apiSecret string, fn func(r string, bl []byte)) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	c := &client{
+		apiKey:    apiKey,
+		apiSecret: apiSecret,
+	}
+
+	err := c.connect(ctx, "/ws/account", func(r responseType, bl []byte) {
+		fn(string(r), bl)
+	})
 	if err != nil {
 		return err
 	}
@@ -185,8 +204,8 @@ type client struct {
 	done              chan struct{}
 }
 
-func (c *client) connect(ctx context.Context, fn func(responseType, []byte)) error {
-	u := url.URL{Scheme: "wss", Host: host, Path: "/ws/trade"}
+func (c *client) connect(ctx context.Context, path string, fn func(responseType, []byte)) error {
+	u := url.URL{Scheme: "wss", Host: host, Path: path}
 
 	t0 := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
 	signature, err := signRequest(c.apiSecret, http.MethodGet, u.Path, t0)
