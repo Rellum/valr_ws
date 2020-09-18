@@ -19,10 +19,16 @@ func main() {
 		log.Printf("%+v", update)
 	}
 
-	err := valr_ws.NewTradeBucketStream(context.Background(), *keyID, *keySecret, []string{"BTCZAR"}, fn)
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 
-	time.Sleep(30 * time.Second)
+	for {
+		if ctx.Err() != nil {
+			break
+		}
+
+		err := valr_ws.NewTradeBucketStream(ctx, *keyID, *keySecret, []string{"BTCZAR"}, fn)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 }

@@ -18,6 +18,9 @@ import (
 const host = "api.valr.com"
 
 func NewMarketSummaryUpdatesStream(ctx context.Context, apiKey, apiSecret string, pairs []string, fn func(MarketSummaryUpdate)) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	c := &client{
 		apiKey:    apiKey,
 		apiSecret: apiSecret,
@@ -31,7 +34,7 @@ func NewMarketSummaryUpdatesStream(ctx context.Context, apiKey, apiSecret string
 		var res marketSummaryUpdateResponse
 		err := json.Unmarshal(bl, &res)
 		if err != nil {
-			log.Println("unmarshal:", err)
+			log.Println("json unmarshal error:", err)
 			return
 		}
 
@@ -41,24 +44,32 @@ func NewMarketSummaryUpdatesStream(ctx context.Context, apiKey, apiSecret string
 		return err
 	}
 
-	return subscribe(c.conn, eventTypeMarketSummaryUpdate, pairs)
+	err = subscribe(c.conn, eventTypeMarketSummaryUpdate, pairs)
+	if err != nil {
+		return err
+	}
+
+	return pingForever(ctx, c.conn, c.done)
 }
 
 func NewAggregatedOrderbookUpdatesStream(ctx context.Context, apiKey, apiSecret string, pairs []string, fn func(AggregatedOrderbookUpdate)) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	c := &client{
 		apiKey:    apiKey,
 		apiSecret: apiSecret,
 	}
 
 	err := c.connect(ctx, func(r responseType, bl []byte) {
-		if r != responseTypeMarketSummaryUpdate {
+		if r != responseTypeAggregatedOrderbookUpdate {
 			return
 		}
 
 		var res aggregatedOrderbookUpdateResponse
 		err := json.Unmarshal(bl, &res)
 		if err != nil {
-			log.Println("unmarshal:", err)
+			log.Println("json unmarshal error:", err)
 			return
 		}
 
@@ -68,24 +79,32 @@ func NewAggregatedOrderbookUpdatesStream(ctx context.Context, apiKey, apiSecret 
 		return err
 	}
 
-	return subscribe(c.conn, eventTypeAggregatedOrderbookUpdate, pairs)
+	err = subscribe(c.conn, eventTypeAggregatedOrderbookUpdate, pairs)
+	if err != nil {
+		return err
+	}
+
+	return pingForever(ctx, c.conn, c.done)
 }
 
 func NewTradeBucketStream(ctx context.Context, apiKey, apiSecret string, pairs []string, fn func(NewTradeBucket)) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	c := &client{
 		apiKey:    apiKey,
 		apiSecret: apiSecret,
 	}
 
 	err := c.connect(ctx, func(r responseType, bl []byte) {
-		if r != responseTypeMarketSummaryUpdate {
+		if r != responseTypeNewTradeBucket {
 			return
 		}
 
 		var res newTradeBucketResponse
 		err := json.Unmarshal(bl, &res)
 		if err != nil {
-			log.Println("unmarshal:", err)
+			log.Println("json unmarshal error:", err)
 			return
 		}
 
@@ -95,10 +114,18 @@ func NewTradeBucketStream(ctx context.Context, apiKey, apiSecret string, pairs [
 		return err
 	}
 
-	return subscribe(c.conn, eventTypeNewTradeBucket, pairs)
+	err = subscribe(c.conn, eventTypeNewTradeBucket, pairs)
+	if err != nil {
+		return err
+	}
+
+	return pingForever(ctx, c.conn, c.done)
 }
 
 func NewTradeStream(ctx context.Context, apiKey, apiSecret string, pairs []string, fn func(NewTrade)) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	c := &client{
 		apiKey:    apiKey,
 		apiSecret: apiSecret,
@@ -112,7 +139,7 @@ func NewTradeStream(ctx context.Context, apiKey, apiSecret string, pairs []strin
 		var res newTradeResponse
 		err := json.Unmarshal(bl, &res)
 		if err != nil {
-			log.Println("unmarshal:", err)
+			log.Println("json unmarshal error:", err)
 			return
 		}
 
@@ -122,7 +149,12 @@ func NewTradeStream(ctx context.Context, apiKey, apiSecret string, pairs []strin
 		return err
 	}
 
-	return subscribe(c.conn, eventTypeNewTrade, pairs)
+	err = subscribe(c.conn, eventTypeNewTrade, pairs)
+	if err != nil {
+		return err
+	}
+
+	return pingForever(ctx, c.conn, c.done)
 }
 
 func subscribe(conn *websocket.Conn, e eventType, pl []string) error {
@@ -172,21 +204,28 @@ func (c *client) connect(ctx context.Context, fn func(responseType, []byte)) err
 		return err
 	}
 
+	c.conn.PingHandler()
+
 	c.done = make(chan struct{})
 
 	go func() {
 		defer close(c.done)
 		for {
+			if ctx.Err() != nil {
+				log.Println("context error:", err)
+				return
+			}
+
 			_, bl, err := c.conn.ReadMessage()
 			if err != nil {
-				log.Println("read:", err)
+				log.Println("read message error:", err)
 				return
 			}
 
 			var res response
 			err = json.Unmarshal(bl, &res)
 			if err != nil {
-				log.Println("read:", err)
+				log.Println("json unmarshal error:", err)
 				return
 			}
 
@@ -194,16 +233,13 @@ func (c *client) connect(ctx context.Context, fn func(responseType, []byte)) err
 		}
 	}()
 
-	go pingForever(c.conn, c.done)
-
 	return nil
 }
 
-func pingForever(conn *websocket.Conn, done <-chan struct{}) {
+func pingForever(ctx context.Context, conn *websocket.Conn, done <-chan struct{}) error {
 	ping, err := json.Marshal(request{Type: requestTypePing})
 	if err != nil {
-		log.Println("marshal:", err)
-		return
+		return err
 	}
 
 	ticker := time.NewTicker(30 * time.Second)
@@ -211,14 +247,13 @@ func pingForever(conn *websocket.Conn, done <-chan struct{}) {
 	for {
 		select {
 		case <-done:
+		case <-ctx.Done():
 			ticker.Stop()
-			conn.Close()
-			return
+			return conn.Close()
 		case <-ticker.C:
 			err = conn.WriteMessage(websocket.TextMessage, ping)
 			if err != nil {
-				log.Println("write:", err)
-				return
+				return err
 			}
 		}
 	}
