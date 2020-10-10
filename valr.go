@@ -157,7 +157,51 @@ func NewTradeStream(ctx context.Context, apiKey, apiSecret string, pairs []strin
 	return pingForever(ctx, c.conn, c.done)
 }
 
-func NewAccountStream(ctx context.Context, apiKey, apiSecret string, fn func(r string, bl []byte)) error {
+type AccountStreamOpt func(*accountStreamOpts)
+
+type accountStreamOpts struct {
+	onAny               func(responseType string, bl []byte)
+	onBalanceUpdate     func(BalanceUpdate)
+	onOpenOrdersUpdate  func([]OpenOrderUpdate)
+	onOrderStatusUpdate func(OrderStatusUpdate)
+}
+
+func OnAny(fn func(responseType string, bl []byte)) AccountStreamOpt {
+	return func(o *accountStreamOpts) {
+		o.onAny = fn
+	}
+}
+
+func OnBalanceUpdate(fn func(BalanceUpdate)) AccountStreamOpt {
+	return func(o *accountStreamOpts) {
+		o.onBalanceUpdate = fn
+	}
+}
+
+func OnOpenOrdersUpdate(fn func([]OpenOrderUpdate)) AccountStreamOpt {
+	return func(o *accountStreamOpts) {
+		o.onOpenOrdersUpdate = fn
+	}
+}
+
+func OnOrderStatusUpdate(fn func(OrderStatusUpdate)) AccountStreamOpt {
+	return func(o *accountStreamOpts) {
+		o.onOrderStatusUpdate = fn
+	}
+}
+
+func NewAccountStream(ctx context.Context, apiKey, apiSecret string, opts ...AccountStreamOpt) error {
+	opt := accountStreamOpts{
+		onAny:               func(responseType string, bl []byte) {},
+		onBalanceUpdate:     func(BalanceUpdate) {},
+		onOpenOrdersUpdate:  func([]OpenOrderUpdate) {},
+		onOrderStatusUpdate: func(OrderStatusUpdate) {},
+	}
+
+	for _, o := range opts {
+		o(&opt)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -167,7 +211,37 @@ func NewAccountStream(ctx context.Context, apiKey, apiSecret string, fn func(r s
 	}
 
 	err := c.connect(ctx, "/ws/account", func(r responseType, bl []byte) {
-		fn(string(r), bl)
+		opt.onAny(string(r), bl)
+
+		switch r {
+		case responseTypeBalanceUpdate:
+			var res balanceUpdateResponse
+			err := json.Unmarshal(bl, &res)
+			if err != nil {
+				log.Println("balanceUpdateResponse unmarshal error:", err)
+				return
+			}
+
+			opt.onBalanceUpdate(res.Data)
+		case responseTypeOpenOrdersUpdate:
+			var res openOrdersUpdateResponse
+			err := json.Unmarshal(bl, &res)
+			if err != nil {
+				log.Println("openOrdersUpdateResponse unmarshal error:", err)
+				return
+			}
+
+			opt.onOpenOrdersUpdate(res.Data)
+		case responseTypeOrderStatusUpdate:
+			var res orderStatusUpdateResponse
+			err := json.Unmarshal(bl, &res)
+			if err != nil {
+				log.Println("orderStatusUpdateResponse unmarshal error:", err)
+				return
+			}
+
+			opt.onOrderStatusUpdate(res.Data)
+		}
 	})
 	if err != nil {
 		return err
