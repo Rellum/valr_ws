@@ -183,11 +183,11 @@ type balanceUpdateResponse struct {
 }
 
 type BalanceUpdate struct {
-	Currency  Currency  `json:"currency"`
-	Available string    `json:"available"`
-	Reserved  string    `json:"reserved"`
-	Total     string    `json:"total"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Currency  Currency        `json:"currency"`
+	Available decimal.Decimal `json:"available"`
+	Reserved  decimal.Decimal `json:"reserved"`
+	Total     decimal.Decimal `json:"total"`
+	UpdatedAt time.Time       `json:"updatedAt"`
 }
 
 type Currency struct {
