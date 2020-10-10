@@ -41,16 +41,16 @@ const responseTypeOrderStatusUpdate responseType = "ORDER_STATUS_UPDATE"
 const responseTypeOpenOrdersUpdate responseType = "OPEN_ORDERS_UPDATE"
 const responseTypeBalanceUpdate responseType = "BALANCE_UPDATE"
 
-type orderStatusType string
+type OrderStatusType string
 
-const orderStatusTypePlaced orderStatusType = "Placed"
-const orderStatusTypeFailed orderStatusType = "Failed"
-const orderStatusTypeCancelled orderStatusType = "Cancelled"
-const orderStatusTypeFilled orderStatusType = "Filled"
-const orderStatusTypePartiallyFilled orderStatusType = "Partially Filled"
-const orderStatusTypeInstantOrderReserveFailed orderStatusType = "Instant Order Balance Reserve Failed"
-const orderStatusTypeInstantOrderReserved orderStatusType = "Instant Order Balance Reserved"
-const orderStatusTypeInstantOrderCompleted orderStatusType = "Instant Order Completed"
+const OrderStatusTypePlaced OrderStatusType = "Placed"
+const OrderStatusTypeFailed OrderStatusType = "Failed"
+const OrderStatusTypeCancelled OrderStatusType = "Cancelled"
+const OrderStatusTypeFilled OrderStatusType = "Filled"
+const OrderStatusTypePartiallyFilled OrderStatusType = "Partially Filled"
+const OrderStatusTypeInstantOrderReserveFailed OrderStatusType = "Instant Order Balance Reserve Failed"
+const OrderStatusTypeInstantOrderReserved OrderStatusType = "Instant Order Balance Reserved"
+const OrderStatusTypeInstantOrderCompleted OrderStatusType = "Instant Order Completed"
 
 type response struct {
 	Type responseType `json:"type"`
@@ -147,7 +147,7 @@ type orderStatusUpdateResponse struct {
 
 type OrderStatusUpdate struct {
 	OrderID           string          `json:"orderId"`
-	OrderStatusType   orderStatusType `json:"orderStatusType"`
+	OrderStatusType   OrderStatusType `json:"orderStatusType"`
 	CurrencyPair      CurrencyPair    `json:"currencyPair"`
 	OriginalPrice     decimal.Decimal `json:"originalPrice"`
 	RemainingQuantity decimal.Decimal `json:"remainingQuantity"`
