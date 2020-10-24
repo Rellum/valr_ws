@@ -148,7 +148,7 @@ type orderStatusUpdateResponse struct {
 type OrderStatusUpdate struct {
 	OrderID           string          `json:"orderId"`
 	OrderStatusType   OrderStatusType `json:"orderStatusType"`
-	CurrencyPair      CurrencyPair    `json:"currencyPair"`
+	CurrencyPair      string          `json:"currencyPair"`
 	OriginalPrice     decimal.Decimal `json:"originalPrice"`
 	RemainingQuantity decimal.Decimal `json:"remainingQuantity"`
 	OriginalQuantity  decimal.Decimal `json:"originalQuantity"`
