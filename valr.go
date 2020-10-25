@@ -34,8 +34,7 @@ func NewMarketSummaryUpdatesStream(ctx context.Context, apiKey, apiSecret string
 		var res marketSummaryUpdateResponse
 		err := json.Unmarshal(bl, &res)
 		if err != nil {
-			log.Println("json unmarshal error:", err)
-			return
+			log.Fatalf("json unmarshal error: %s; source: %s\n", err, string(bl))
 		}
 
 		fn(res.Data)
@@ -69,8 +68,7 @@ func NewAggregatedOrderbookUpdatesStream(ctx context.Context, apiKey, apiSecret 
 		var res aggregatedOrderbookUpdateResponse
 		err := json.Unmarshal(bl, &res)
 		if err != nil {
-			log.Println("json unmarshal error:", err)
-			return
+			log.Fatalf("json unmarshal error: %s; source: %s\n", err, string(bl))
 		}
 
 		fn(res.Data)
@@ -104,8 +102,7 @@ func NewTradeBucketStream(ctx context.Context, apiKey, apiSecret string, pairs [
 		var res newTradeBucketResponse
 		err := json.Unmarshal(bl, &res)
 		if err != nil {
-			log.Println("json unmarshal error:", err)
-			return
+			log.Fatalf("json unmarshal error: %s; source: %s\n", err, string(bl))
 		}
 
 		fn(res.Data)
@@ -139,8 +136,7 @@ func NewTradeStream(ctx context.Context, apiKey, apiSecret string, pairs []strin
 		var res newTradeResponse
 		err := json.Unmarshal(bl, &res)
 		if err != nil {
-			log.Println("json unmarshal error:", err)
-			return
+			log.Fatalf("json unmarshal error: %s; source: %s\n", err, string(bl))
 		}
 
 		fn(res.Data)
@@ -218,8 +214,7 @@ func NewAccountStream(ctx context.Context, apiKey, apiSecret string, opts ...Acc
 			var res balanceUpdateResponse
 			err := json.Unmarshal(bl, &res)
 			if err != nil {
-				log.Println("balanceUpdateResponse unmarshal error:", err)
-				return
+				log.Fatalf("json unmarshal error: %s; source: %s\n", err, string(bl))
 			}
 
 			opt.onBalanceUpdate(res.Data)
@@ -227,8 +222,7 @@ func NewAccountStream(ctx context.Context, apiKey, apiSecret string, opts ...Acc
 			var res openOrdersUpdateResponse
 			err := json.Unmarshal(bl, &res)
 			if err != nil {
-				log.Println("openOrdersUpdateResponse unmarshal error:", err)
-				return
+				log.Fatalf("json unmarshal error: %s; source: %s\n", err, string(bl))
 			}
 
 			opt.onOpenOrdersUpdate(res.Data)
@@ -236,8 +230,7 @@ func NewAccountStream(ctx context.Context, apiKey, apiSecret string, opts ...Acc
 			var res orderStatusUpdateResponse
 			err := json.Unmarshal(bl, &res)
 			if err != nil {
-				log.Println("orderStatusUpdateResponse unmarshal error:", err)
-				return
+				log.Fatalf("json unmarshal error: %s; source: %s\n", err, string(bl))
 			}
 
 			opt.onOrderStatusUpdate(res.Data)
@@ -318,8 +311,7 @@ func (c *client) connect(ctx context.Context, path string, fn func(responseType,
 			var res response
 			err = json.Unmarshal(bl, &res)
 			if err != nil {
-				log.Println("json unmarshal error:", err)
-				return
+				log.Fatalf("json unmarshal error: %s; source: %s\n", err, string(bl))
 			}
 
 			fn(res.Type, bl)
